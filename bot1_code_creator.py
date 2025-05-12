@@ -92,7 +92,7 @@ def safe_main():
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("추천코드", get_referral))
+    app.add_handler(CommandHandler("code", get_referral))
     app.add_handler(CommandHandler("rank", ranking))
     app.add_handler(CommandHandler("reset", reset))
     await app.run_polling()
