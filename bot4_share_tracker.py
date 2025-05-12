@@ -1,10 +1,12 @@
 import os
 import asyncio
+import nest_asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 print("🚀 BOT4 시작됨")
 
+nest_asyncio.apply()
 TOKEN = os.getenv("BOT4_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -16,4 +18,5 @@ async def main():
     await app.run_polling()
 
 def safe_main():
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
