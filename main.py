@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from threading import Thread
 
 def start_bot(module):
     print(f"✅ Starting {module}")
@@ -12,8 +12,8 @@ if __name__ == "__main__":
         "bot4_share_tracker",
         "bot5_emoji_event"
     ]
-    processes = [Process(target=start_bot, args=(mod,)) for mod in modules]
-    for p in processes:
-        p.start()
-    for p in processes:
-        p.join()
+    threads = [Thread(target=start_bot, args=(mod,)) for mod in modules]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
