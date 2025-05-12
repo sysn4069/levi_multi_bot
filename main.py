@@ -1,6 +1,7 @@
 from multiprocessing import Process
 
 def start_bot(module):
+    print(f"✅ Starting {module}")
     __import__(module)
 
 if __name__ == "__main__":

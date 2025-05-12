@@ -3,6 +3,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler
 from telegram import Update
 from telegram.ext import ContextTypes
 
+print("🚀 BOT1 시작됨")
+
 TOKEN = os.getenv("BOT1_TOKEN")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
