@@ -1,3 +1,4 @@
+
 import os
 import json
 import random
@@ -44,9 +45,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_db(db)
 
     await update.message.reply_text(
-        f"""✅ 추천 등록 완료!
-📮 당신의 추천코드: `{code}`""",
-        parse_mode="Markdown"
+        f"✅ 추천 등록 완료!\n📮 당신의 추천코드: `{code}`", parse_mode="Markdown"
     )
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
