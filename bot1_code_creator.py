@@ -77,6 +77,6 @@ def safe_main():
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("랭킹", ranking))
-    app.add_handler(CommandHandler("초기화", reset))
+    app.add_handler(CommandHandler("rank", ranking))
+    app.add_handler(CommandHandler("reset", reset))
     await app.run_polling()
