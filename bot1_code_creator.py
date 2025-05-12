@@ -1,4 +1,3 @@
-
 import os
 import json
 import random
@@ -6,6 +5,9 @@ import string
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import nest_asyncio
+
+nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT1_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
@@ -42,8 +44,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         save_db(db)
 
     await update.message.reply_text(
-        f"✅ 추천 등록 완료!
-📮 당신의 추천코드: `{code}`", parse_mode="Markdown"
+        f"""✅ 추천 등록 완료!
+📮 당신의 추천코드: `{code}`""",
+        parse_mode="Markdown"
     )
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -53,11 +56,9 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📉 아직 추천 내역이 없습니다.")
         return
     sorted_users = sorted(counts.items(), key=lambda x: x[1], reverse=True)
-    msg = "🏆 추천 랭킹:
-"
+    msg = "🏆 추천 랭킹:\n"
     for i, (user_id, count) in enumerate(sorted_users, 1):
-        msg += f"{i}위 - {count}회 추천
-"
+        msg += f"{i}위 - {count}회 추천\n"
     await update.message.reply_text(msg)
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
