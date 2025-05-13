@@ -37,8 +37,7 @@ async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     config["message"] = text
     save_settings()
-    await update.effective_message.reply_text(f"✅ 메시지가 설정되었습니다:
-{text}")
+    await update.effective_message.reply_text(f"✅ 메시지가 설정되었습니다: {text}")
 
 async def set_interval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
