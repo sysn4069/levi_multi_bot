@@ -10,12 +10,10 @@ from telegram.ext import (
 )
 import nest_asyncio
 
-os.makedirs("/data", exist_ok=True)
-
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT2_TOKEN")
-SETTINGS_PATH = "/data/bot2_settings.json"
+SETTINGS_PATH = "/render/data/bot2_settings.json"
 DEFAULT_INTERVAL = 60  # minutes
 
 config = {
@@ -34,9 +32,14 @@ def save_settings():
     with open(SETTINGS_PATH, "w") as f:
         json.dump(config, f)
 
-async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_user.id) != os.getenv("ADMIN_ID"):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+# 관리자 체크
+ADMIN_IDS = {int(os.getenv("ADMIN_ID", "0"))}
+def is_admin(update: Update) -> bool:
+    return update.effective_user.id in ADMIN_IDS
+
+# 명령어 핸들러들
+async def setmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
         return
     text = " ".join(context.args)
     if not text:
@@ -46,9 +49,8 @@ async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_settings()
     await update.effective_message.reply_text(f"✅ 메시지가 설정되었습니다: {text}")
 
-async def set_interval(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_user.id) != os.getenv("ADMIN_ID"):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+async def setinterval2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
         return
     try:
         minutes = int(context.args[0])
@@ -58,9 +60,8 @@ async def set_interval(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except (IndexError, ValueError):
         await update.effective_message.reply_text("❗ 숫자로 된 간격(분)을 입력해주세요. 예: /setinterval2 30")
 
-async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_user.id) != os.getenv("ADMIN_ID"):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+async def showsettings2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
         return
     msg = f"""📋 현재 설정:
 메시지: {config['message']}
@@ -68,9 +69,8 @@ async def show_settings(update: Update, context: ContextTypes.DEFAULT_TYPE):
 활성화: {"✅" if config["enabled"] else "❌"}"""
     await update.effective_message.reply_text(msg)
 
-async def start_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_user.id) != os.getenv("ADMIN_ID"):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+async def start2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
         return
     chat_id = update.effective_chat.id
     config["chat_id"] = chat_id
@@ -78,14 +78,14 @@ async def start_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_settings()
     await update.effective_message.reply_text("🚀 자동 메시지 전송이 시작되었습니다.")
 
-async def stop_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if str(update.effective_user.id) != os.getenv("ADMIN_ID"):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+async def stop2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update):
         return
     config["enabled"] = False
     save_settings()
     await update.effective_message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
 
+# 백그라운드 루프
 async def background_loop(application):
     await asyncio.sleep(1)
     while True:
@@ -96,15 +96,16 @@ async def background_loop(application):
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
+# 메인
 async def main():
     load_settings()
     app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("setmsg2", set_message))
-    app.add_handler(CommandHandler("setinterval2", set_interval))
-    app.add_handler(CommandHandler("showsettings2", show_settings))
-    app.add_handler(CommandHandler("start2", start_sending))
-    app.add_handler(CommandHandler("stop2", stop_sending))
+    app.add_handler(CommandHandler("setmsg2", setmsg2))
+    app.add_handler(CommandHandler("setinterval2", setinterval2))
+    app.add_handler(CommandHandler("showsettings2", showsettings2))
+    app.add_handler(CommandHandler("start2", start2))
+    app.add_handler(CommandHandler("stop2", stop2))
 
     async def run_with_bg():
         asyncio.create_task(background_loop(app))
