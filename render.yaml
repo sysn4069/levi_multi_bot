@@ -7,10 +7,22 @@ services:
     startCommand: "python main.py"
     envVars:
       - key: BOT1_TOKEN
-        value: YOUR_BOT1_TOKEN
+        value: ${BOT1_TOKEN}
+      - key: BOT2_TOKEN
+        value: ${BOT2_TOKEN}
+      - key: BOT3_TOKEN
+        value: ${BOT3_TOKEN}
+      - key: BOT4_TOKEN
+        value: ${BOT4_TOKEN}
+      - key: BOT5_TOKEN
+        value: ${BOT5_TOKEN}
       - key: ADMIN_ID
-        value: "123456789"
+        value: ${ADMIN_ID}
+      - key: ADMIN_IDS
+        value: ${ADMIN_IDS}
+      - key: SHARE_API_URL
+        value: ${SHARE_API_URL}
     disk:
-      name: data-disk
+      name: bot-data
       mountPath: /data
       sizeGB: 1
