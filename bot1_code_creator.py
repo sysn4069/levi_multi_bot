@@ -91,7 +91,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     sorted_users = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     msg = "🏆 추천 랭킹:\n"
     for i, (user_id, count) in enumerate(sorted_users, 1):
-        msg += f"{i}위 - {count}회 추천\n
+        msg += f"{i}위 - {count}회 추천\n"
     await update.effective_message.reply_text(msg)
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
