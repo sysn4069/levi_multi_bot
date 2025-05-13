@@ -10,6 +10,8 @@ from telegram.ext import (
 )
 import nest_asyncio
 
+os.makedirs("/render/data", exist_ok=True)
+
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT2_TOKEN")
