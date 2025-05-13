@@ -13,25 +13,18 @@ event_started = False
 def is_admin(user_id: int) -> bool:
     return user_id in ADMIN_IDS
 
-# /start5
 async def start5(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "이모지 선착순 이벤트 봇입니다.\n"
-        "관리자는 /setemoji5, /setlimit5, /startevent5 명령으로 설정 후 시작하세요."
-    )
+    await update.message.reply_text("이모지 선착순 이벤트 봇입니다.\n관리자는 /setemoji5, /setlimit5, /startevent5 명령으로 설정 후 시작하세요.")
 
-# /setemoji5 😍
-async def setemoji5(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setemoji(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("이 명령어는 관리자만 사용할 수 있습니다.")
         return
     global emoji_to_track
     if context.args:
         emoji_to_track = context.args[0]
-    # 출력 안 함 (요청사항)
 
-# /setlimit5 5
-async def setlimit5(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setlimit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("이 명령어는 관리자만 사용할 수 있습니다.")
         return
@@ -43,8 +36,7 @@ async def setlimit5(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             await update.message.reply_text("올바른 숫자를 입력해주세요.")
 
-# /startevent5
-async def startevent5(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start_event(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("이 명령어는 관리자만 사용할 수 있습니다.")
         return
@@ -55,7 +47,6 @@ async def startevent5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     event_started = True
     await update.message.reply_text("이벤트가 시작되었습니다! 설정된 이모지를 포함해 메시지를 보내면 참여됩니다.")
 
-# /reset5
 async def reset5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("이 명령어는 관리자만 사용할 수 있습니다.")
@@ -67,7 +58,6 @@ async def reset5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     event_started = False
     await update.message.reply_text("이벤트 설정이 초기화되었습니다.")
 
-# /list5
 async def list5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not participants:
         await update.message.reply_text("현재 참여자가 없습니다.")
@@ -75,20 +65,14 @@ async def list5(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines = [f"{i+1}. {p['name']}" for i, p in enumerate(participants)]
         await update.message.reply_text("현재 참여자 목록:\n" + "\n".join(lines))
 
-# /status5
 async def status5(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if emoji_to_track and participant_limit:
         await update.message.reply_text(
-            f"✅ 현재 이벤트 상태\n"
-            f"- 감지 이모지: {emoji_to_track}\n"
-            f"- 인원 제한: {participant_limit}\n"
-            f"- 현재 참여자 수: {len(participants)}\n"
-            f"- 이벤트 시작됨: {event_started}"
+            f"✅ 현재 이벤트 상태\n- 감지 이모지: {emoji_to_track}\n- 인원 제한: {participant_limit}\n- 현재 참여자 수: {len(participants)}\n- 이벤트 시작됨: {event_started}"
         )
     else:
         await update.message.reply_text("아직 이모지 또는 인원 제한이 설정되지 않았습니다.")
 
-# 일반 메시지 감지 핸들러
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global participants
 
@@ -119,7 +103,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(f"{update.effective_user.full_name}님이 이벤트에 참여하셨습니다! ({current_count}/{participant_limit})")
 
-# 실행부
 def safe_main():
     import nest_asyncio
     nest_asyncio.apply()
@@ -129,9 +112,9 @@ def safe_main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start5", start5))
-    app.add_handler(CommandHandler("setemoji5", setemoji5))
-    app.add_handler(CommandHandler("setlimit5", setlimit5))
-    app.add_handler(CommandHandler("startevent5", startevent5))
+    app.add_handler(CommandHandler("setemoji5", setemoji))
+    app.add_handler(CommandHandler("setlimit5", setlimit))
+    app.add_handler(CommandHandler("startevent5", start_event))
     app.add_handler(CommandHandler("reset5", reset5))
     app.add_handler(CommandHandler("list5", list5))
     app.add_handler(CommandHandler("status5", status5))
