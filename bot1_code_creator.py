@@ -1,4 +1,3 @@
-
 import os
 import json
 import random
@@ -45,7 +44,7 @@ config = load_config()
 def generate_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     db = load_db()
 
@@ -62,7 +61,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 {config['group_link']}"""
     )
 
-async def get_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_referral1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     db = load_db()
 
@@ -82,7 +81,7 @@ async def get_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(f"""📮 당신의 추천코드 링크:
 {invite_link}""")
 
-async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def ranking1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = load_db()
     counts = db.get("counts", {})
     if not counts:
@@ -94,7 +93,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg += f"{i}위 - {count}회 추천\n"
     await update.effective_message.reply_text(msg)
 
-async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def reset1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id != ADMIN_ID:
         await update.effective_message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
@@ -104,7 +103,7 @@ async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_db(db)
     await update.effective_message.reply_text("✅ 추천 기록이 초기화되었습니다.")
 
-async def set_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def set_link1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id != ADMIN_ID:
         await update.effective_message.reply_text("⛔ 관리자만 변경할 수 있습니다.")
@@ -114,7 +113,7 @@ async def set_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_config(config)
     await update.effective_message.reply_text("✅ 그룹 링크가 변경되었습니다.")
 
-async def set_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def set_msg1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id != ADMIN_ID:
         await update.effective_message.reply_text("⛔ 관리자만 변경할 수 있습니다.")
@@ -124,7 +123,7 @@ async def set_msg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_config(config)
     await update.effective_message.reply_text("✅ 입장 메시지가 변경되었습니다.")
 
-async def get_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def get_info1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(
         f"""📎 현재 그룹 링크: {config['group_link']}
 📝 입장 메시지: {config['join_message']}"""
@@ -136,13 +135,13 @@ def safe_main():
 
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start, filters=filters.ALL))
-    app.add_handler(CommandHandler("code", get_referral, filters=filters.ALL))
-    app.add_handler(CommandHandler("rank", ranking, filters=filters.ALL))
-    app.add_handler(CommandHandler("reset", reset, filters=filters.ALL))
-    app.add_handler(CommandHandler("setlink", set_link, filters=filters.ALL))
-    app.add_handler(CommandHandler("setmsg", set_msg, filters=filters.ALL))
-    app.add_handler(CommandHandler("getinfo", get_info, filters=filters.ALL))
+    app.add_handler(CommandHandler("start1", start1, filters=filters.ALL))
+    app.add_handler(CommandHandler("code1", get_referral1, filters=filters.ALL))
+    app.add_handler(CommandHandler("rank1", ranking1, filters=filters.ALL))
+    app.add_handler(CommandHandler("reset1", reset1, filters=filters.ALL))
+    app.add_handler(CommandHandler("setlink1", set_link1, filters=filters.ALL))
+    app.add_handler(CommandHandler("setmsg1", set_msg1, filters=filters.ALL))
+    app.add_handler(CommandHandler("getinfo1", get_info1, filters=filters.ALL))
     await app.run_polling()
 
 if __name__ == "__main__":
