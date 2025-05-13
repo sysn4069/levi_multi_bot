@@ -1,60 +1,97 @@
-
 import os
 import json
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from datetime import datetime
-from hashlib import sha256
+import asyncio
+import httpx
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
+import nest_asyncio
 
-app = FastAPI()
+nest_asyncio.apply()
 
-DB_FILE = "share_db.json"
+TOKEN = os.getenv("BOT4_TOKEN")
+API_BASE_URL = os.getenv("SHARE_API_URL")  # 예: "https://your-api-server.com"
 
-def load_db():
-    if not os.path.exists(DB_FILE):
-        return {"videos": {}, "clicks": {}}
-    with open(DB_FILE, "r") as f:
-        return json.load(f)
+ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
 
-def save_db(data):
-    with open(DB_FILE, "w") as f:
-        json.dump(data, f)
+# /register 명령어 (관리자 전용)
+async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if str(update.effective_user.id) not in ADMIN_IDS:
+        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+        return
 
-@app.post("/api/register")
-async def register_video(req: Request):
-    data = await req.json()
-    video_id = data.get("video_id")
-    title = data.get("title")
-    thumbnail = data.get("thumbnail")
+    try:
+        text = " ".join(context.args)
+        title, thumbnail = [s.strip() for s in text.split("|")]
+    except Exception:
+        await update.message.reply_text("❗ 형식: /register 영상제목 | 썸네일URL")
+        return
 
-    if not video_id or not title:
-        return JSONResponse(content={"error": "Missing video_id or title"}, status_code=400)
+    video_id = str(hash(title))  # 간단한 해시로 영상 ID 생성
 
-    db = load_db()
-    db["videos"][video_id] = {"title": title, "thumbnail": thumbnail, "created": datetime.utcnow().isoformat()}
-    save_db(db)
-    return {"status": "ok"}
+    async with httpx.AsyncClient() as client:
+        res = await client.post(f"{API_BASE_URL}/api/register", json={
+            "video_id": video_id,
+            "title": title,
+            "thumbnail": thumbnail
+        })
 
-@app.get("/api/click")
-async def count_click(video_id: str, user_id: str, ip: str):
-    db = load_db()
-    key = f"{video_id}:{ip}"
+    if res.status_code == 200:
+        await update.message.reply_text(f"✅ 등록 완료\n영상ID: `{video_id}`", parse_mode='Markdown')
+    else:
+        await update.message.reply_text("⚠️ 등록 실패")
 
-    if key in db["clicks"]:
-        return {"status": "ignored", "reason": "already counted"}
+# /getlink 명령어
+async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        video_id = context.args[0]
+        user_id = str(update.effective_user.id)
+        share_link = f"{API_BASE_URL}/track?video_id={video_id}&user_id={user_id}"
+        await update.message.reply_text(f"🔗 당신의 공유 링크:\n{share_link}")
+    except IndexError:
+        await update.message.reply_text("❗ 형식: /getlink 영상ID")
 
-    db["clicks"][key] = {"user_id": user_id, "timestamp": datetime.utcnow().isoformat()}
-    save_db(db)
-    return {"status": "counted"}
+# /mystats 명령어
+async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"{API_BASE_URL}/api/user_stats", params={"user_id": user_id})
+    if res.status_code == 200:
+        data = res.json()
+        count = data.get("count", 0)
+        await update.message.reply_text(f"📊 현재까지 {count}명이 당신의 링크를 클릭했습니다.")
+    else:
+        await update.message.reply_text("⚠️ 통계 조회 실패")
 
-@app.get("/api/stats")
-async def get_stats():
-    db = load_db()
-    counts = {}
-    for key, val in db["clicks"].items():
-        uid = val["user_id"]
-        counts[uid] = counts.get(uid, 0) + 1
-    return counts
+# /rank 명령어
+async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"{API_BASE_URL}/api/ranking")
+    if res.status_code == 200:
+        data = res.json()
+        if not data:
+            await update.message.reply_text("🏁 아직 클릭 데이터가 없습니다.")
+            return
+        msg = "🏆 공유 랭킹:\n"
+        for i, (uid, count) in enumerate(data.items(), 1):
+            msg += f"{i}. 유저 {uid} - {count}회\n"
+        await update.message.reply_text(msg)
+    else:
+        await update.message.reply_text("⚠️ 랭킹 조회 실패")
+
+# 메인 함수
+async def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("register", register_video, filters=filters.ALL))
+    app.add_handler(CommandHandler("getlink", get_link, filters=filters.ALL))
+    app.add_handler(CommandHandler("mystats", my_stats, filters=filters.ALL))
+    app.add_handler(CommandHandler("rank", show_rank, filters=filters.ALL))
+
+    print("✅ bot4_share_tracker is running")
+    await app.run_polling()
 
 def safe_main():
-    print("✅ bot4_share_tracker is API-only. No need to run as standalone.")
+    asyncio.run(main())
+
+if __name__ == "__main__":
+    safe_main()
