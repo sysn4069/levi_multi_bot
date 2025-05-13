@@ -3,7 +3,7 @@ import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
 
-ADMIN_IDS = set(map(int, os.getenv("ADMIN_IDS", "").split(",")))
+ADMIN_IDS = {int(os.getenv("ADMIN_ID", "0"))}
 
 emoji_to_track = None
 participant_limit = None
@@ -26,7 +26,7 @@ async def setemoji(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global emoji_to_track
     if context.args:
         emoji_to_track = context.args[0]
-    # 메시지는 출력하지 않음 (요청사항)
+    # 메시지 출력 안 함 (요청사항)
 
 # 명령어: /setlimit 5
 async def setlimit(update: Update, context: ContextTypes.DEFAULT_TYPE):
