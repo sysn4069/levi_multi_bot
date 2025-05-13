@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, Application
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -18,7 +18,6 @@ config = {
     "enabled": False
 }
 
-# 설정 불러오기 및 저장
 def load_settings():
     if os.path.exists(SETTINGS_PATH):
         with open(SETTINGS_PATH, "r") as f:
@@ -28,7 +27,6 @@ def save_settings():
     with open(SETTINGS_PATH, "w") as f:
         json.dump(config, f)
 
-# 명령어 핸들러
 async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(context.args)
     if not text:
@@ -66,8 +64,8 @@ async def stop_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_settings()
     await update.effective_message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
 
-# 백그라운드 루프
-async def background_loop(app: Application):
+# ✅ 백그라운드 루프
+async def background_loop(app):
     while True:
         await asyncio.sleep(config["interval"] * 60)
         if config["enabled"] and config["chat_id"]:
@@ -76,10 +74,19 @@ async def background_loop(app: Application):
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
-# 메인
+# ✅ post_init 훅에서 태스크 등록
+async def post_init(app):
+    app.create_task(background_loop(app))
+
+# ✅ 메인 함수
 async def main():
     load_settings()
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = (
+        ApplicationBuilder()
+        .token(TOKEN)
+        .post_init(post_init)
+        .build()
+    )
 
     app.add_handler(CommandHandler("setmsg", set_message, filters=filters.ALL))
     app.add_handler(CommandHandler("setinterval", set_interval, filters=filters.ALL))
@@ -87,11 +94,7 @@ async def main():
     app.add_handler(CommandHandler("start", start_sending, filters=filters.ALL))
     app.add_handler(CommandHandler("stop", stop_sending, filters=filters.ALL))
 
-    await app.initialize()  # 수동 초기화
-    app.create_task(background_loop(app))  # 경고 없이 안전하게 task 등록
-    await app.start()
-    await app.updater.start_polling()
-    await app.updater.idle()
+    await app.run_polling()
 
 def safe_main():
     asyncio.run(main())
