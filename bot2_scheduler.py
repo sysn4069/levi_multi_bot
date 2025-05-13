@@ -1,4 +1,3 @@
-
 import os
 import json
 import asyncio
@@ -77,10 +76,14 @@ async def background_loop(app):
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
+# post_init 훅: 앱이 실행되면서 루프 태스크를 안전하게 등록
+async def post_init(app):
+    app.create_task(background_loop(app))
+
 # 메인
 async def main():
     load_settings()
-    app = ApplicationBuilder().token(TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
 
     app.add_handler(CommandHandler("setmsg", set_message, filters=filters.ALL))
     app.add_handler(CommandHandler("setinterval", set_interval, filters=filters.ALL))
@@ -88,10 +91,8 @@ async def main():
     app.add_handler(CommandHandler("start", start_sending, filters=filters.ALL))
     app.add_handler(CommandHandler("stop", stop_sending, filters=filters.ALL))
 
-    # 백그라운드 태스크 실행
-    app.create_task(background_loop(app))
     await app.run_polling()
-    
+
 def safe_main():
     asyncio.run(main())
 
