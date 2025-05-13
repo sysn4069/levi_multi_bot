@@ -4,13 +4,13 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
-os.makedirs("/render/data", exist_ok=True)
+os.makedirs("render/data", exist_ok=True)
 
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT3_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
-SETTINGS_PATH = "/render/data/bot3_rule.json"
+SETTINGS_PATH = "render/data/bot3_rule.json"
 
 config = {
     "rule_message": "📌 기본 룰입니다. /setrule3로 변경할 수 있습니다."
