@@ -27,8 +27,9 @@ def init_db():
             vid TEXT,
             uid TEXT,
             ip TEXT,
+            date TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(vid, uid, ip, DATE(timestamp))
+            UNIQUE(vid, uid, ip, date)
         )
     ''')
     conn.commit()
@@ -37,12 +38,12 @@ def init_db():
 @app.get("/track")
 async def track(vid: str, uid: str, request: Request):
     ip = request.client.host
-    now = datetime.datetime.now().isoformat()
+    today = datetime.datetime.utcnow().date().isoformat()
 
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO clicks (vid, uid, ip) VALUES (?, ?, ?)", (vid, uid, ip))
+        c.execute("INSERT INTO clicks (vid, uid, ip, date) VALUES (?, ?, ?, ?)", (vid, uid, ip, today))
         conn.commit()
         # Count update
         data = load_data()
