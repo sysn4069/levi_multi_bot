@@ -4,7 +4,6 @@ import asyncio
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
-    Application,
     CommandHandler,
     ContextTypes,
     filters,
@@ -33,6 +32,7 @@ def save_settings():
     with open(SETTINGS_PATH, "w") as f:
         json.dump(config, f)
 
+# 명령어 핸들러들
 async def set_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(context.args)
     if not text:
@@ -70,21 +70,20 @@ async def stop_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     save_settings()
     await update.effective_message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
 
-# ✅ 백그라운드 루프
-async def background_loop(app: Application):
-    await app.wait_until_ready()
+# 백그라운드 루프
+async def background_loop(application):
+    await asyncio.sleep(1)  # 약간 기다렸다가 시작 (앱 완전히 뜬 후 안전하게)
     while True:
         await asyncio.sleep(config["interval"] * 60)
         if config["enabled"] and config["chat_id"]:
             try:
-                await app.bot.send_message(chat_id=config["chat_id"], text=config["message"])
+                await application.bot.send_message(chat_id=config["chat_id"], text=config["message"])
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
-# ✅ 메인
+# 메인
 async def main():
     load_settings()
-
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("setmsg", set_message))
@@ -93,12 +92,12 @@ async def main():
     app.add_handler(CommandHandler("start", start_sending))
     app.add_handler(CommandHandler("stop", stop_sending))
 
-    # ⛔ run_polling 전에 create_task 하지 말고...
-    async def runner():
-        asyncio.create_task(background_loop(app))  # ✅ 이 시점이면 앱은 이미 실행 중이라 경고 없음
+    # 여기가 핵심: 앱 실행 후 백그라운드 루프 등록
+    async def run_with_bg():
+        asyncio.create_task(background_loop(app))  # 절대 run_polling 전에 실행 금지
         await app.run_polling()
 
-    await runner()
+    await run_with_bg()
 
 def safe_main():
     asyncio.run(main())
