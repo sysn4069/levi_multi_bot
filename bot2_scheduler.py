@@ -91,6 +91,9 @@ async def main():
     # 백그라운드 태스크 실행
     app.create_task(background_loop(app))
     await app.run_polling()
+    
+def safe_main():
+    asyncio.run(main())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    safe_main()
