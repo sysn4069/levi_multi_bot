@@ -118,7 +118,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"{update.effective_user.full_name}님이 이벤트에 참여하셨습니다! ({current_count}/{participant_limit})")
 
 # 실행부
-if __name__ == "__main__":
+def safe_main():
     import nest_asyncio
     nest_asyncio.apply()
 
@@ -137,3 +137,6 @@ if __name__ == "__main__":
 
     print("✅ bot5_emoji_event.py is running...")
     app.run_polling()
+
+if __name__ == "__main__":
+    safe_main()
