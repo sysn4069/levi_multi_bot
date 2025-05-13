@@ -1,4 +1,3 @@
-
 import os
 import json
 from telegram import Update
@@ -44,7 +43,7 @@ async def main():
     load_settings()
     app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("룰", show_rule, filters=filters.ALL))
+    app.add_handler(CommandHandler("rule", show_rule, filters=filters.ALL))         # 기존 "/룰" → "/rule"
     app.add_handler(CommandHandler("setrule", set_rule, filters=filters.ALL))
 
     await app.run_polling()
