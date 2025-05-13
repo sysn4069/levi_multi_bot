@@ -4,13 +4,11 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
-os.makedirs("/data", exist_ok=True)
-
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT3_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
-SETTINGS_PATH = "/data/bot3_rule.json"
+SETTINGS_PATH = "/render/data/bot3_rule.json"
 
 config = {
     "rule_message": "📌 기본 룰입니다. /setrule3로 변경할 수 있습니다."
@@ -18,40 +16,34 @@ config = {
 
 def load_settings():
     if os.path.exists(SETTINGS_PATH):
-        with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+        with open(SETTINGS_PATH, "r") as f:
             config.update(json.load(f))
 
 def save_settings():
-    with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False)
+    with open(SETTINGS_PATH, "w") as f:
+        json.dump(config, f)
 
-# 현재 룰 보여주는 명령어
-async def show_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def rule3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text(config["rule_message"])
 
-# 관리자용 룰 설정 명령어
-async def set_rule(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def setrule3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     if user_id != ADMIN_ID:
-        await update.effective_message.reply_text("⛔ 관리자만 룰을 설정할 수 있습니다.")
         return
-
     new_rule = " ".join(context.args)
     if not new_rule:
         await update.effective_message.reply_text("❗ 설정할 룰 메시지를 입력해주세요.")
         return
-
     config["rule_message"] = new_rule
     save_settings()
-    await update.effective_message.reply_text("✅ 룰 메시지가 설정되었습니다.")
+    await update.message.reply_text("✅ 룰 메시지가 설정되었습니다.")
 
-# 실행 메인
 async def main():
     load_settings()
     app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("rule3", show_rule, filters=filters.ALL))
-    app.add_handler(CommandHandler("setrule3", set_rule, filters=filters.ALL))
+    app.add_handler(CommandHandler("rule3", rule3, filters=filters.ALL))
+    app.add_handler(CommandHandler("setrule3", setrule3, filters=filters.ALL))
 
     await app.run_polling()
 
