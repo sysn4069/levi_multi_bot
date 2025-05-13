@@ -95,3 +95,75 @@ def safe_main():
 
 if __name__ == "__main__":
     safe_main()
+
+# 관리자용 명령어 추가 (bot4_share_tracker.py 내부)
+
+from telegram.ext import CommandHandler
+from telegram import Update
+from telegram.ext import ContextTypes
+
+# 관리자 ID를 환경변수나 상수로 설정
+ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "123456789"))  # 예시
+
+async def is_admin(update: Update):
+    return update.effective_user and update.effective_user.id == ADMIN_ID
+
+# /resetclicks4 명령어 - 클릭 데이터 초기화
+async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update):
+        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
+        return
+
+    db = load_db()
+    db["clicks"] = {}
+    save_db(db)
+    await update.message.reply_text("✅ 클릭 데이터가 초기화되었습니다.")
+
+# /deletevideo [영상ID] 명령어
+async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update):
+        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
+        return
+
+    if not context.args:
+        await update.message.reply_text("❗ 삭제할 영상 ID를 입력해주세요.")
+        return
+
+    vid = context.args[0]
+    db = load_db()
+    if vid in db["videos"]:
+        del db["videos"][vid]
+        save_db(db)
+        await update.message.reply_text(f"🗑️ 영상 `{vid}` 이(가) 삭제되었습니다.")
+    else:
+        await update.message.reply_text("❗ 해당 영상 ID를 찾을 수 없습니다.")
+
+# /editvideo [영상ID] | [새 제목] | [새 썸네일URL] 명령어
+async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_admin(update):
+        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
+        return
+
+    parts = " ".join(context.args).split("|")
+    if len(parts) < 2:
+        await update.message.reply_text("❗ 형식: /editvideo [영상ID] | [제목] | [썸네일URL] (썸네일은 선택)")
+        return
+
+    vid = parts[0].strip()
+    title = parts[1].strip()
+    thumbnail = parts[2].strip() if len(parts) > 2 else None
+
+    db = load_db()
+    if vid in db["videos"]:
+        db["videos"][vid]["title"] = title
+        if thumbnail:
+            db["videos"][vid]["thumbnail"] = thumbnail
+        save_db(db)
+        await update.message.reply_text("✅ 영상 정보가 수정되었습니다.")
+    else:
+        await update.message.reply_text("❗ 해당 영상 ID를 찾을 수 없습니다.")
+
+# 핸들러 등록 예시 (Application 객체에 연결)
+app.add_handler(CommandHandler("resetclicks4", reset_clicks))
+app.add_handler(CommandHandler("deletevideo", delete_video))
+app.add_handler(CommandHandler("editvideo", edit_video))
