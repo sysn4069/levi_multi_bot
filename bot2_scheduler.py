@@ -2,7 +2,7 @@ import os
 import json
 import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, Application
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -67,7 +67,7 @@ async def stop_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
 
 # 백그라운드 루프
-async def background_loop(app):
+async def background_loop(app: Application):
     while True:
         await asyncio.sleep(config["interval"] * 60)
         if config["enabled"] and config["chat_id"]:
@@ -76,14 +76,10 @@ async def background_loop(app):
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
-# post_init 훅: 앱이 실행되면서 루프 태스크를 안전하게 등록
-async def post_init(app):
-    app.create_task(background_loop(app))
-
 # 메인
 async def main():
     load_settings()
-    app = ApplicationBuilder().token(TOKEN).post_init(post_init).build()
+    app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("setmsg", set_message, filters=filters.ALL))
     app.add_handler(CommandHandler("setinterval", set_interval, filters=filters.ALL))
@@ -91,7 +87,11 @@ async def main():
     app.add_handler(CommandHandler("start", start_sending, filters=filters.ALL))
     app.add_handler(CommandHandler("stop", stop_sending, filters=filters.ALL))
 
-    await app.run_polling()
+    await app.initialize()  # 수동 초기화
+    app.create_task(background_loop(app))  # 경고 없이 안전하게 task 등록
+    await app.start()
+    await app.updater.start_polling()
+    await app.updater.idle()
 
 def safe_main():
     asyncio.run(main())
