@@ -2,7 +2,13 @@ import os
 import json
 import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    Application,
+    CommandHandler,
+    ContextTypes,
+    filters,
+)
 import nest_asyncio
 
 nest_asyncio.apply()
@@ -65,7 +71,8 @@ async def stop_sending(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.effective_message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
 
 # ✅ 백그라운드 루프
-async def background_loop(app):
+async def background_loop(app: Application):
+    await app.wait_until_ready()
     while True:
         await asyncio.sleep(config["interval"] * 60)
         if config["enabled"] and config["chat_id"]:
@@ -74,27 +81,24 @@ async def background_loop(app):
             except Exception as e:
                 print("메시지 전송 오류:", e)
 
-# ✅ post_init 훅에서 태스크 등록
-async def post_init(app):
-    app.create_task(background_loop(app))
-
-# ✅ 메인 함수
+# ✅ 메인
 async def main():
     load_settings()
-    app = (
-        ApplicationBuilder()
-        .token(TOKEN)
-        .post_init(post_init)
-        .build()
-    )
 
-    app.add_handler(CommandHandler("setmsg", set_message, filters=filters.ALL))
-    app.add_handler(CommandHandler("setinterval", set_interval, filters=filters.ALL))
-    app.add_handler(CommandHandler("showsettings", show_settings, filters=filters.ALL))
-    app.add_handler(CommandHandler("start", start_sending, filters=filters.ALL))
-    app.add_handler(CommandHandler("stop", stop_sending, filters=filters.ALL))
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    await app.run_polling()
+    app.add_handler(CommandHandler("setmsg", set_message))
+    app.add_handler(CommandHandler("setinterval", set_interval))
+    app.add_handler(CommandHandler("showsettings", show_settings))
+    app.add_handler(CommandHandler("start", start_sending))
+    app.add_handler(CommandHandler("stop", stop_sending))
+
+    # ⛔ run_polling 전에 create_task 하지 말고...
+    async def runner():
+        asyncio.create_task(background_loop(app))  # ✅ 이 시점이면 앱은 이미 실행 중이라 경고 없음
+        await app.run_polling()
+
+    await runner()
 
 def safe_main():
     asyncio.run(main())
