@@ -4,6 +4,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
+os.makedirs("/data", exist_ok=True)
+
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT3_TOKEN")
