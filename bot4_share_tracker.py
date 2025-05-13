@@ -55,3 +55,6 @@ async def get_stats():
         uid = val["user_id"]
         counts[uid] = counts.get(uid, 0) + 1
     return counts
+
+def safe_main():
+    print("✅ bot4_share_tracker is API-only. No need to run as standalone.")
