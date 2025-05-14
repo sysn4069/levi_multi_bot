@@ -9,8 +9,8 @@ import nest_asyncio
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT4_TOKEN")
-API_BASE_URL = os.getenv("SHARE_API_URL")  # 예: https://your-api.onrender.com
-ADMIN_ID = os.getenv("ADMIN_ID")  # ✅ 단일 관리자 ID로 변경
+API_BASE_URL = os.getenv("SHARE_API_URL")
+ADMIN_ID = os.getenv("ADMIN_ID")
 
 # 관리자 확인
 def is_admin(update: Update) -> bool:
