@@ -5,14 +5,16 @@ import nest_asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# 경로 설정
-os.makedirs("/data", exist_ok=True)
-DB_PATH = "/data/schedule_data.json"
-
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT2_TOKEN")
 ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
+
+# 경로 설정
+os.makedirs("/mnt/data", exist_ok=True)
+DB_PATH = "/mnt/data/schedule_data.json"
+
+print("🚀 BOT2 시작됨")
 
 # 관리자 확인
 def is_admin(user_id: int) -> bool:
