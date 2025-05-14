@@ -56,7 +56,7 @@ async def track(vid: str, uid: str, request: Request):
         status = "duplicate"
     conn.close()
 
-    video_url = data["videos"].get(vid, {}).get("video_url")
+    video_url = load_data()["videos"].get(vid, {}).get("video_url")
     if video_url:
         return RedirectResponse(video_url)
 
@@ -142,6 +142,11 @@ async def edit_video(request: Request):
 
     save_data(data)
     return {"status": "updated"}
+
+@app.get("/api/list_videos")
+async def list_videos():
+    data = load_data()
+    return data["videos"]
 
 @app.post("/api/save_recommend")
 async def save_recommend(request: Request):
