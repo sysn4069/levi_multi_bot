@@ -6,8 +6,8 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # 경로 설정
-os.makedirs("render/data", exist_ok=True)
-DB_PATH = "render/data/schedule_data.json"
+os.makedirs("/data", exist_ok=True)
+DB_PATH = "/data/schedule_data.json"
 
 nest_asyncio.apply()
 
@@ -76,14 +76,10 @@ async def delmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         await update.message.reply_text("❗ 사용법: /delmsg2 시간")
 
-# 메시지 자동 전송 루프
+# 메시지 자동 전송 루프 (예시 목적, 실제 구현 미완)
 async def send_scheduled_messages(app):
     while True:
-        now = asyncio.get_event_loop().time()
-        data = load_data()
-        for hour, message in data.items():
-            # 예시: 매 시간 정각에 메시지 전송
-            await asyncio.sleep(0.1)
+        # 실제 사용시 시간 체크 및 전송 로직 구현 필요
         await asyncio.sleep(60)
 
 # 메인 함수
