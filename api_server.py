@@ -6,8 +6,10 @@ import os
 import json
 
 app = FastAPI()
+
 DATA_PATH = "video_data.json"
 DB_PATH = "clicks.db"
+RECOMMEND_PATH = "/mnt/data/recommendations.json"
 
 def load_data():
     if not os.path.exists(DATA_PATH):
@@ -45,7 +47,6 @@ async def track(vid: str, uid: str, request: Request):
     try:
         c.execute("INSERT INTO clicks (vid, uid, ip, date) VALUES (?, ?, ?, ?)", (vid, uid, ip, today))
         conn.commit()
-        # Count update
         data = load_data()
         if vid in data["videos"]:
             data["videos"][vid]["count"] += 1
@@ -122,5 +123,29 @@ async def edit_video(request: Request):
         data["videos"][vid]["thumbnail"] = thumbnail
     save_data(data)
     return {"status": "updated"}
+
+@app.post("/api/save_recommend")
+async def save_recommend(request: Request):
+    payload = await request.json()
+    user_id = str(payload.get("user_id"))
+    code = payload.get("code")
+    timestamp = payload.get("timestamp")
+
+    if not os.path.exists(RECOMMEND_PATH):
+        with open(RECOMMEND_PATH, "w") as f:
+            json.dump({}, f)
+
+    with open(RECOMMEND_PATH, "r") as f:
+        data = json.load(f)
+
+    data[user_id] = {
+        "code": code,
+        "timestamp": timestamp
+    }
+
+    with open(RECOMMEND_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+
+    return {"status": "ok"}
 
 init_db()
