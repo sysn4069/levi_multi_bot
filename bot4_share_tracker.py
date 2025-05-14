@@ -1,167 +1,175 @@
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+import sqlite3
+import datetime
 import os
 import json
-import asyncio
-import httpx
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
-import nest_asyncio
+import uuid
 
-nest_asyncio.apply()
+app = FastAPI()
 
-TOKEN = os.getenv("BOT4_TOKEN")
-API_BASE_URL = os.getenv("SHARE_API_URL")
-ADMIN_ID = os.getenv("ADMIN_ID")
+DATA_PATH = "video_data.json"
+DB_PATH = "clicks.db"
+RECOMMEND_PATH = "/mnt/data/recommendations.json"
 
-# 관리자 확인
-def is_admin(update: Update) -> bool:
-    return str(update.effective_user.id) == ADMIN_ID
+def load_data():
+    if not os.path.exists(DATA_PATH):
+        return {"videos": {}}
+    with open(DATA_PATH, "r") as f:
+        return json.load(f)
 
-# 영상 등록
-async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
-        return
+def save_data(data):
+    with open(DATA_PATH, "w") as f:
+        json.dump(data, f)
 
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS clicks (
+            vid TEXT,
+            uid TEXT,
+            ip TEXT,
+            date TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(vid, uid, ip, date)
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+@app.get("/track")
+async def track(vid: str, uid: str, request: Request):
+    ip = request.client.host
+    today = datetime.datetime.utcnow().date().isoformat()
+
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
     try:
-        text = " ".join(context.args)
-        title, video_url, thumbnail = [s.strip() for s in text.split("|")]
-    except Exception:
-        await update.message.reply_text("❗ 형식: /register4 제목 | 영상URL | 썸네일URL")
-        return
+        c.execute("INSERT INTO clicks (vid, uid, ip, date) VALUES (?, ?, ?, ?)", (vid, uid, ip, today))
+        conn.commit()
+        data = load_data()
+        if vid in data["videos"]:
+            data["videos"][vid]["count"] += 1
+            save_data(data)
+        status = "counted"
+    except sqlite3.IntegrityError:
+        status = "duplicate"
+    conn.close()
 
-    video_id = str(hash(title))
-
-    async with httpx.AsyncClient() as client:
-        res = await client.post(f"{API_BASE_URL}/api/register", json={
-            "video_id": video_id,
-            "title": title,
-            "video_url": video_url,
-            "thumbnail": thumbnail
-        })
-
-    if res.status_code == 200:
-        await update.message.reply_text(f"✅ 등록 완료\n영상ID: `{video_id}`", parse_mode='Markdown')
-    else:
-        await update.message.reply_text("⚠️ 등록 실패")
-
-# 개인 공유 링크 생성
-async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        video_id = context.args[0]
-        user_id = str(update.effective_user.id)
-        share_link = f"{API_BASE_URL}/track?vid={video_id}&uid={user_id}"
-        await update.message.reply_text(f"🔗 당신의 공유 링크:\n{share_link}")
-    except IndexError:
-        await update.message.reply_text("❗ 형식: /getlink4 영상ID")
-
-# 내 클릭 통계
-async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    async with httpx.AsyncClient() as client:
-        res = await client.get(f"{API_BASE_URL}/api/user_stats", params={"user_id": user_id})
-    if res.status_code == 200:
-        data = res.json()
-        count = data.get("count", 0)
-        await update.message.reply_text(f"📊 현재까지 {count}명이 당신의 링크를 클릭했습니다.")
-    else:
-        await update.message.reply_text("⚠️ 통계 조회 실패")
-
-# 전체 랭킹 보기
-async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    async with httpx.AsyncClient() as client:
-        res = await client.get(f"{API_BASE_URL}/api/ranking")
-    if res.status_code == 200:
-        data = res.json()
-        if not data:
-            await update.message.reply_text("🏁 아직 클릭 데이터가 없습니다.")
-            return
-        msg = "🏆 공유 랭킹:\n"
-        for i, (uid, count) in enumerate(data.items(), 1):
-            msg += f"{i}. 유저 {uid} - {count}회\n"
-        await update.message.reply_text(msg)
-    else:
-        await update.message.reply_text("⚠️ 랭킹 조회 실패")
-
-# 클릭 초기화
-async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
-        return
-
-    async with httpx.AsyncClient() as client:
-        res = await client.post(f"{API_BASE_URL}/api/reset_clicks")
-
-    if res.status_code == 200:
-        await update.message.reply_text("✅ 클릭 데이터가 초기화되었습니다.")
-    else:
-        await update.message.reply_text("⚠️ 초기화 실패")
-
-# 영상 삭제
-async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
-        return
-
-    if not context.args:
-        await update.message.reply_text("❗ 삭제할 영상 ID를 입력해주세요.")
-        return
-
-    video_id = context.args[0]
-    async with httpx.AsyncClient() as client:
-        res = await client.post(f"{API_BASE_URL}/api/delete_video", json={"video_id": video_id})
-
-    if res.status_code == 200:
-        await update.message.reply_text(f"🗑️ 영상 `{video_id}` 삭제 완료")
-    else:
-        await update.message.reply_text("⚠️ 삭제 실패 또는 영상 ID 없음")
-
-# 영상 정보 수정
-async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
-        return
-
-    parts = " ".join(context.args).split("|")
-    if len(parts) < 2:
-        await update.message.reply_text("❗ 형식: /editvideo4 영상ID | 제목 | 썸네일URL(선택) | 영상URL(선택)")
-        return
-
-    video_id = parts[0].strip()
-    title = parts[1].strip()
-    thumbnail = parts[2].strip() if len(parts) > 2 else None
-    video_url = parts[3].strip() if len(parts) > 3 else None
-
-    payload = {"video_id": video_id, "title": title}
-    if thumbnail:
-        payload["thumbnail"] = thumbnail
+    video_url = data["videos"].get(vid, {}).get("video_url")
     if video_url:
-        payload["video_url"] = video_url
+        return RedirectResponse(video_url)
 
-    async with httpx.AsyncClient() as client:
-        res = await client.post(f"{API_BASE_URL}/api/edit_video", json=payload)
+    return JSONResponse(content={"status": status, "message": "영상 링크가 없습니다."})
 
-    if res.status_code == 200:
-        await update.message.reply_text("✅ 영상 정보 수정 완료")
-    else:
-        await update.message.reply_text("⚠️ 수정 실패 또는 영상 ID 없음")
+@app.post("/api/register")
+async def register_video(request: Request):
+    payload = await request.json()
+    vid = str(uuid.uuid4())
+    title = payload.get("title")
+    thumbnail = payload.get("thumbnail")
+    video_url = payload.get("video_url")
 
-# 실행 함수
-async def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+    if not title:
+        return JSONResponse(content={"error": "Missing title"}, status_code=400)
 
-    app.add_handler(CommandHandler("register4", register_video, filters=filters.ALL))
-    app.add_handler(CommandHandler("getlink4", get_link, filters=filters.ALL))
-    app.add_handler(CommandHandler("mystats4", my_stats, filters=filters.ALL))
-    app.add_handler(CommandHandler("rank4", show_rank, filters=filters.ALL))
-    app.add_handler(CommandHandler("reset4", reset_clicks, filters=filters.ALL))
-    app.add_handler(CommandHandler("deletevideo4", delete_video, filters=filters.ALL))
-    app.add_handler(CommandHandler("editvideo4", edit_video, filters=filters.ALL))
+    data = load_data()
+    data["videos"][vid] = {
+        "title": title,
+        "thumbnail": thumbnail,
+        "video_url": video_url,
+        "count": 0
+    }
+    save_data(data)
+    return {"status": "ok", "video_id": vid}
 
-    print("✅ bot4_share_tracker is running")
-    await app.run_polling()
+@app.get("/api/user_stats")
+async def user_stats(user_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM clicks WHERE uid = ?", (user_id,))
+    count = c.fetchone()[0]
+    conn.close()
+    return {"count": count}
 
-def safe_main():
-    asyncio.run(main())
+@app.get("/api/ranking")
+async def ranking():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT uid, COUNT(*) as cnt FROM clicks GROUP BY uid ORDER BY cnt DESC")
+    rows = c.fetchall()
+    conn.close()
+    return {uid: cnt for uid, cnt in rows}
+
+@app.post("/api/reset_clicks")
+def reset_clicks():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM clicks")
+    conn.commit()
+    conn.close()
+    return {"status": "reset"}
+
+@app.post("/api/delete_video")
+async def delete_video(request: Request):
+    payload = await request.json()
+    vid = payload.get("video_id")
+    data = load_data()
+    if vid in data["videos"]:
+        del data["videos"][vid]
+        save_data(data)
+        return {"status": "deleted"}
+    return JSONResponse(content={"error": "not found"}, status_code=404)
+
+@app.post("/api/edit_video")
+async def edit_video(request: Request):
+    payload = await request.json()
+    vid = payload.get("video_id")
+    title = payload.get("title")
+    thumbnail = payload.get("thumbnail")
+    video_url = payload.get("video_url")
+
+    data = load_data()
+    if vid not in data["videos"]:
+        return JSONResponse(content={"error": "not found"}, status_code=404)
+
+    if title:
+        data["videos"][vid]["title"] = title
+    if thumbnail:
+        data["videos"][vid]["thumbnail"] = thumbnail
+    if video_url:
+        data["videos"][vid]["video_url"] = video_url
+
+    save_data(data)
+    return {"status": "updated"}
+
+@app.post("/api/save_recommend")
+async def save_recommend(request: Request):
+    payload = await request.json()
+    user_id = str(payload.get("user_id"))
+    code = payload.get("code")
+    timestamp = payload.get("timestamp")
+
+    if not os.path.exists(RECOMMEND_PATH):
+        with open(RECOMMEND_PATH, "w") as f:
+            json.dump({}, f)
+
+    with open(RECOMMEND_PATH, "r") as f:
+        data = json.load(f)
+
+    data[user_id] = {
+        "code": code,
+        "timestamp": timestamp
+    }
+
+    with open(RECOMMEND_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+
+    return {"status": "ok"}
+
+init_db()
 
 if __name__ == "__main__":
-    safe_main()
+    import uvicorn
+    uvicorn.run("api_server:app", host="0.0.0.0", port=10000)
