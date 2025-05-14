@@ -9,10 +9,9 @@ import nest_asyncio
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT4_TOKEN")
-API_BASE_URL = os.getenv("SHARE_API_URL")  # 값 예: https://your-api.onrender.com
-ADMIN_ID = os.getenv("ADMIN_ID")  # ✅ 단일 관리자 ID
+API_BASE_URL = os.getenv("SHARE_API_URL")  # 예: https://your-api.onrender.com
+ADMIN_ID = os.getenv("ADMIN_ID")  # 단일 관리자 ID
 
-# 관리자 확인
 def is_admin(update: Update) -> bool:
     return str(update.effective_user.id) == ADMIN_ID
 
@@ -26,7 +25,7 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = " ".join(context.args)
         title, video_url, thumbnail = [s.strip() for s in text.split("|")]
     except Exception:
-        await update.message.reply_text("❗ 형식: /register4 제목 | 영상URL | 써밀리URL")
+        await update.message.reply_text("❗ 형식: /register4 제목 | 영상URL | 썸네일URL")
         return
 
     video_id = str(hash(title))
@@ -66,7 +65,7 @@ async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 통계 조회 실패")
 
-# 전체 랭킹 보기
+# 전체 랭킹
 async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with httpx.AsyncClient() as client:
         res = await client.get(f"{API_BASE_URL}/api/ranking")
@@ -85,7 +84,7 @@ async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 클릭 초기화
 async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명목에요.")
+        await update.message.reply_text("❌ 관리자만 사용할 수 있습니다.")
         return
 
     async with httpx.AsyncClient() as client:
@@ -99,7 +98,7 @@ async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 영상 삭제
 async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명목입니다.")
+        await update.message.reply_text("❌ 관리자만 사용할 수 있습니다.")
         return
 
     if not context.args:
@@ -118,12 +117,12 @@ async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 영상 정보 수정
 async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
-        await update.message.reply_text("❌ 관리자만 사용할 수 있는 명목입니다.")
+        await update.message.reply_text("❌ 관리자만 사용할 수 있습니다.")
         return
 
     parts = " ".join(context.args).split("|")
     if len(parts) < 2:
-        await update.message.reply_text("❗ 형식: /editvideo4 영상ID | 제목 | 써밀리URL(선택) | 영상URL(선택)")
+        await update.message.reply_text("❗ 형식: /editvideo4 영상ID | 제목 | 썸네일URL(선택) | 영상URL(선택)")
         return
 
     video_id = parts[0].strip()
@@ -145,17 +144,38 @@ async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 수정 실패 또는 영상 ID 없음")
 
+# 업로드된 영상 목록 출력
+async def list_videos(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async with httpx.AsyncClient() as client:
+        res = await client.get(f"{API_BASE_URL}/video_data.json")
+    if res.status_code == 200:
+        try:
+            data = res.json()
+            videos = data.get("videos", {})
+            if not videos:
+                await update.message.reply_text("📂 등록된 영상이 없습니다.")
+                return
+            msg = "📋 등록된 영상 목록:\n"
+            for vid, info in videos.items():
+                msg += f"- {info.get('title')} (ID: `{vid}`)\n"
+            await update.message.reply_text(msg, parse_mode="Markdown")
+        except Exception:
+            await update.message.reply_text("⚠️ 영상 데이터를 불러오지 못했습니다.")
+    else:
+        await update.message.reply_text("⚠️ API 요청 실패")
+
 # 실행 함수
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    app.add_handler(CommandHandler("register4", register_video, filters=filters.ALL))
-    app.add_handler(CommandHandler("getlink4", get_link, filters=filters.ALL))
-    app.add_handler(CommandHandler("mystats4", my_stats, filters=filters.ALL))
-    app.add_handler(CommandHandler("rank4", show_rank, filters=filters.ALL))
-    app.add_handler(CommandHandler("reset4", reset_clicks, filters=filters.ALL))
-    app.add_handler(CommandHandler("deletevideo4", delete_video, filters=filters.ALL))
-    app.add_handler(CommandHandler("editvideo4", edit_video, filters=filters.ALL))
+    app.add_handler(CommandHandler("register4", register_video))
+    app.add_handler(CommandHandler("getlink4", get_link))
+    app.add_handler(CommandHandler("mystats4", my_stats))
+    app.add_handler(CommandHandler("rank4", show_rank))
+    app.add_handler(CommandHandler("reset4", reset_clicks))
+    app.add_handler(CommandHandler("deletevideo4", delete_video))
+    app.add_handler(CommandHandler("editvideo4", edit_video))
+    app.add_handler(CommandHandler("listvideos4", list_videos))  # ✅ 추가됨
 
     print("✅ bot4_share_tracker is running")
     await app.run_polling()
