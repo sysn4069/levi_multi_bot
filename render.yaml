@@ -14,12 +14,8 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
-    plan: standard  # ✅ 요금제 명시 안 하면 Starter로 처리됨!
+    plan: standard
     disk:
       name: bot-persistent-storage
       mountPath: /mnt/data
       sizeGB: 1
-
-disks:
-  - name: bot-persistent-storage
-    sizeGB: 1
