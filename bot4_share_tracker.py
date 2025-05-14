@@ -10,11 +10,11 @@ nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT4_TOKEN")
 API_BASE_URL = os.getenv("SHARE_API_URL")  # 예: https://your-api.onrender.com
-ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
+ADMIN_ID = os.getenv("ADMIN_ID")  # ✅ 단일 관리자 ID로 변경
 
 # 관리자 확인
 def is_admin(update: Update) -> bool:
-    return str(update.effective_user.id) in ADMIN_IDS
+    return str(update.effective_user.id) == ADMIN_ID
 
 # 영상 등록
 async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
