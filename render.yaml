@@ -8,3 +8,17 @@ services:
       name: data
       mountPath: /data
       sizeGB: 1
+
+services:
+  - type: background
+    name: telegram-bots
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    plan: standard
+    volumes:
+      - name: bot-data
+        path: /mnt/data
+
+volumes:
+  - name: bot-data
