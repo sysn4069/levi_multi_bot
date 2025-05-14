@@ -7,14 +7,12 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
-os.makedirs("render/data", exist_ok=True)
-
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT1_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
-DB_PATH = "render/data/referral_db.json"
-CONFIG_PATH = "render/data/config.json"
+DB_PATH = "/data/referral_db.json"
+CONFIG_PATH = "/data/config.json"
 
 print("🚀 BOT1 시작됨")
 
