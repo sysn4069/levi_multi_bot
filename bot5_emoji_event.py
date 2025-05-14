@@ -8,8 +8,8 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 # 환경변수 및 경로
 TOKEN = os.getenv("BOT5_TOKEN")
 ADMIN_IDS = {int(os.getenv("ADMIN_ID", "0"))}
-DATA_PATH = "render/data/bot5_event.json"
-os.makedirs("render/data", exist_ok=True)
+DATA_PATH = "/mnt/data/bot5_event.json"
+os.makedirs("/mnt/data", exist_ok=True)
 
 nest_asyncio.apply()
 
