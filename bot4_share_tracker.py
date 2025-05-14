@@ -24,9 +24,9 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         text = " ".join(context.args)
-        title, thumbnail = [s.strip() for s in text.split("|")]
+        title, video_url, thumbnail = [s.strip() for s in text.split("|")]
     except Exception:
-        await update.message.reply_text("❗ 형식: /register4 제목 | 썸네일URL")
+        await update.message.reply_text("❗ 형식: /register4 제목 | 영상URL | 썸네일URL")
         return
 
     video_id = str(hash(title))
@@ -35,6 +35,7 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
         res = await client.post(f"{API_BASE_URL}/api/register", json={
             "video_id": video_id,
             "title": title,
+            "video_url": video_url,
             "thumbnail": thumbnail
         })
 
@@ -48,7 +49,7 @@ async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         video_id = context.args[0]
         user_id = str(update.effective_user.id)
-        share_link = f"{API_BASE_URL}/track?video_id={video_id}&user_id={user_id}"
+        share_link = f"{API_BASE_URL}/track?vid={video_id}&uid={user_id}"
         await update.message.reply_text(f"🔗 당신의 공유 링크:\n{share_link}")
     except IndexError:
         await update.message.reply_text("❗ 형식: /getlink4 영상ID")
@@ -122,16 +123,19 @@ async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     parts = " ".join(context.args).split("|")
     if len(parts) < 2:
-        await update.message.reply_text("❗ 형식: /editvideo4 영상ID | 제목 | 썸네일URL(선택)")
+        await update.message.reply_text("❗ 형식: /editvideo4 영상ID | 제목 | 썸네일URL(선택) | 영상URL(선택)")
         return
 
     video_id = parts[0].strip()
     title = parts[1].strip()
     thumbnail = parts[2].strip() if len(parts) > 2 else None
+    video_url = parts[3].strip() if len(parts) > 3 else None
 
     payload = {"video_id": video_id, "title": title}
     if thumbnail:
         payload["thumbnail"] = thumbnail
+    if video_url:
+        payload["video_url"] = video_url
 
     async with httpx.AsyncClient() as client:
         res = await client.post(f"{API_BASE_URL}/api/edit_video", json=payload)
