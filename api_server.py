@@ -10,8 +10,6 @@ app = FastAPI()
 DATA_PATH = "/mnt/data/video_data.json"
 DB_PATH = "/mnt/data/clicks.db"
 
-# Skip os.makedirs to avoid permission error; assume /mnt/data already exists on Render
-
 def load_data():
     if not os.path.exists(DATA_PATH):
         return {"videos": {}}
@@ -23,6 +21,14 @@ def save_data(data):
         json.dump(data, f)
 
 def init_db():
+    try:
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+        with open(DB_PATH, "a"):
+            pass  # Ensure we can write to the DB file
+    except Exception as e:
+        print(f"❌ [init_db 오류] DB 파일 생성 실패: {e}")
+        raise SystemExit("⛔ /mnt/data 경로에 쓰기 권한이 없습니다. Render 설정을 확인하세요.")
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
