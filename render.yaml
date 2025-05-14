@@ -3,19 +3,23 @@ services:
     name: your-service-name
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: python api_server.py
     disk:
       name: data
       mountPath: /data
       sizeGB: 1
 
-  - type: worker  # ⛳ 여기를 background → worker 로 수정
+  - type: worker
     name: telegram-bots
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
-    plan: standard
+    plan: standard  # ✅ 요금제 명시 안 하면 Starter로 처리됨!
     disk:
       name: bot-persistent-storage
       mountPath: /mnt/data
       sizeGB: 1
+
+disks:
+  - name: bot-persistent-storage
+    sizeGB: 1
