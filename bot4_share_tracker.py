@@ -45,13 +45,13 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # 개인 공유 링크 생성
 async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        video_id = context.args[0]
-        user_id = str(update.effective_user.id)
-        share_link = f"{API_BASE_URL}/track?vid={video_id}&uid={user_id}"
-        await update.message.reply_text(f"🔗 당신의 공유 링크:\n{share_link}")
-    except IndexError:
+    if not context.args:
         await update.message.reply_text("❗ 형식: /getlink4 영상ID")
+        return
+    video_id = context.args[0]
+    user_id = str(update.effective_user.id)
+    share_link = f"{API_BASE_URL}/track?vid={video_id}&uid={user_id}"
+    await update.message.reply_text(f"🔗 당신의 공유 링크:\n{share_link}")
 
 # 내 클릭 통계
 async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -147,11 +147,10 @@ async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 업로드된 영상 목록 출력
 async def list_videos(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with httpx.AsyncClient() as client:
-        res = await client.get(f"{API_BASE_URL}/video_data.json")
+        res = await client.get(f"{API_BASE_URL}/api/list_videos")
     if res.status_code == 200:
         try:
-            data = res.json()
-            videos = data.get("videos", {})
+            videos = res.json()
             if not videos:
                 await update.message.reply_text("📂 등록된 영상이 없습니다.")
                 return
