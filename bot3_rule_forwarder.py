@@ -1,56 +1,100 @@
 import os
 import json
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
+import asyncio
 import nest_asyncio
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-os.makedirs("render/data", exist_ok=True)
+# 경로 설정
+os.makedirs("/data", exist_ok=True)
+DB_PATH = "/data/schedule_data.json"
 
 nest_asyncio.apply()
 
-TOKEN = os.getenv("BOT3_TOKEN")
-ADMIN_ID = os.getenv("ADMIN_ID")
-SETTINGS_PATH = "render/data/bot3_rule.json"
+TOKEN = os.getenv("BOT2_TOKEN")
+ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
 
-config = {
-    "rule_message": "📌 기본 룰입니다. /setrule3로 변경할 수 있습니다."
-}
+# 관리자 확인
+def is_admin(user_id: int) -> bool:
+    return str(user_id) in ADMIN_IDS
 
-def load_settings():
-    if os.path.exists(SETTINGS_PATH):
-        with open(SETTINGS_PATH, "r") as f:
-            config.update(json.load(f))
+# 스케줄 데이터 로드 및 저장
+def load_data():
+    if not os.path.exists(DB_PATH):
+        return {}
+    with open(DB_PATH, "r") as f:
+        return json.load(f)
 
-def save_settings():
-    with open(SETTINGS_PATH, "w") as f:
-        json.dump(config, f)
+def save_data(data):
+    with open(DB_PATH, "w") as f:
+        json.dump(data, f)
 
-async def rule3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.effective_message.reply_text(config["rule_message"])
-
-async def setrule3(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    if user_id != ADMIN_ID:
+# 명령어: /addmsg2 시간 메시지
+async def addmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
         return
-    new_rule = " ".join(context.args)
-    if not new_rule:
-        await update.effective_message.reply_text("❗ 설정할 룰 메시지를 입력해주세요.")
-        return
-    config["rule_message"] = new_rule
-    save_settings()
-    await update.message.reply_text("✅ 룰 메시지가 설정되었습니다.")
 
+    try:
+        hour = context.args[0]
+        message = " ".join(context.args[1:])
+        data = load_data()
+        data[hour] = message
+        save_data(data)
+        await update.message.reply_text(f"✅ {hour}시에 보낼 메시지가 추가되었습니다.")
+    except:
+        await update.message.reply_text("❗ 사용법: /addmsg2 시간 메시지")
+
+# 명령어: /listmsg2
+async def listmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    data = load_data()
+    if not data:
+        await update.message.reply_text("📭 등록된 메시지가 없습니다.")
+    else:
+        msg = "📋 등록된 메시지 목록:\n"
+        for hour, text in sorted(data.items()):
+            msg += f"{hour}: {text}\n"
+        await update.message.reply_text(msg)
+
+# 명령어: /delmsg2 시간
+async def delmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    if not is_admin(user_id):
+        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+        return
+
+    try:
+        hour = context.args[0]
+        data = load_data()
+        if hour in data:
+            del data[hour]
+            save_data(data)
+            await update.message.reply_text(f"🗑️ {hour}시 메시지가 삭제되었습니다.")
+        else:
+            await update.message.reply_text("❌ 해당 시간에 메시지가 없습니다.")
+    except:
+        await update.message.reply_text("❗ 사용법: /delmsg2 시간")
+
+# 메시지 자동 전송 루프 (예시 목적, 실제 구현 미완)
+async def send_scheduled_messages(app):
+    while True:
+        # 실제 사용시 시간 체크 및 전송 로직 구현 필요
+        await asyncio.sleep(60)
+
+# 메인 함수
 async def main():
-    load_settings()
     app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("addmsg2", addmsg2))
+    app.add_handler(CommandHandler("listmsg2", listmsg2))
+    app.add_handler(CommandHandler("delmsg2", delmsg2))
 
-    app.add_handler(CommandHandler("rule3", rule3, filters=filters.ALL))
-    app.add_handler(CommandHandler("setrule3", setrule3, filters=filters.ALL))
+    asyncio.create_task(send_scheduled_messages(app))
 
+    print("✅ bot2_scheduler is running")
     await app.run_polling()
 
 def safe_main():
-    import asyncio
     asyncio.run(main())
 
 if __name__ == "__main__":
