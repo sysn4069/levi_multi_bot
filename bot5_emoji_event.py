@@ -62,6 +62,7 @@ async def setlimit(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start_event(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
+    load_event_data()  # ✅ 상태 최신화
     if not event_data["emoji_to_track"] or not event_data["participant_limit"]:
         await update.message.reply_text("이모지와 인원 수를 먼저 설정하세요.")
         return
