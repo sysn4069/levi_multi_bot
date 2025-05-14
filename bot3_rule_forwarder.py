@@ -4,14 +4,14 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
 
-# 영구 저장 경로 설정
-os.makedirs("/data", exist_ok=True)
-SETTINGS_PATH = "/data/bot3_rule.json"
-
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT3_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
+
+# 영구 저장 경로 설정
+os.makedirs("/mnt/data", exist_ok=True)
+SETTINGS_PATH = "/mnt/data/bot3_rule.json"
 
 # 기본 설정값
 config = {
