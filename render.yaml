@@ -9,7 +9,6 @@ services:
       mountPath: /data
       sizeGB: 1
 
-services:
   - type: background
     name: telegram-bots
     env: python
@@ -17,8 +16,8 @@ services:
     startCommand: python main.py
     plan: standard
     volumes:
-      - name: bot-data
+      - name: bot-persistent-storage
         path: /mnt/data
 
 volumes:
-  - name: bot-data
+  - name: bot-persistent-storage
