@@ -63,10 +63,18 @@ async def register_video(request: Request):
     vid = payload.get("video_id")
     title = payload.get("title")
     thumbnail = payload.get("thumbnail")
+    video_url = payload.get("video_url")
+
     if not vid or not title:
         return JSONResponse(content={"error": "Missing fields"}, status_code=400)
+
     data = load_data()
-    data["videos"][vid] = {"title": title, "thumbnail": thumbnail, "count": 0}
+    data["videos"][vid] = {
+        "title": title,
+        "thumbnail": thumbnail,
+        "video_url": video_url,
+        "count": 0
+    }
     save_data(data)
     return {"status": "ok"}
 
@@ -114,13 +122,19 @@ async def edit_video(request: Request):
     vid = payload.get("video_id")
     title = payload.get("title")
     thumbnail = payload.get("thumbnail")
+    video_url = payload.get("video_url")
+
     data = load_data()
     if vid not in data["videos"]:
         return JSONResponse(content={"error": "not found"}, status_code=404)
+
     if title:
         data["videos"][vid]["title"] = title
     if thumbnail:
         data["videos"][vid]["thumbnail"] = thumbnail
+    if video_url:
+        data["videos"][vid]["video_url"] = video_url
+
     save_data(data)
     return {"status": "updated"}
 
@@ -150,7 +164,6 @@ async def save_recommend(request: Request):
 
 init_db()
 
-# ✅ Render 웹 서비스용 uvicorn 실행
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api_server:app", host="0.0.0.0", port=10000)
