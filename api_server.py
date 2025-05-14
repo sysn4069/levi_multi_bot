@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 import sqlite3
 import datetime
 import os
@@ -55,7 +55,12 @@ async def track(vid: str, uid: str, request: Request):
     except sqlite3.IntegrityError:
         status = "duplicate"
     conn.close()
-    return JSONResponse(content={"status": status})
+
+    video_url = data["videos"].get(vid, {}).get("video_url")
+    if video_url:
+        return RedirectResponse(video_url)
+
+    return JSONResponse(content={"status": status, "message": "영상 링크가 없습니다."})
 
 @app.post("/api/register")
 async def register_video(request: Request):
