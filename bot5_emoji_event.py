@@ -104,9 +104,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not event_data["event_started"] or not event_data["emoji_to_track"]:
         return
 
-    if not update.message or not update.message.text:
-        return
-
     text = update.message.text
     user_id = update.effective_user.id
 
@@ -135,7 +132,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # 메인
 async def main():
     load_event_data()
-    app = ApplicationBuilder().token(TOKEN).allowed_updates(["message"]).build()
+    app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start5", start5))
     app.add_handler(CommandHandler("setemoji5", setemoji))
