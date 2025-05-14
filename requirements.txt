@@ -3,3 +3,4 @@ nest_asyncio
 fastapi
 uvicorn
 httpx
+requests==2.31.0
