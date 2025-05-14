@@ -9,7 +9,6 @@ app = FastAPI()
 
 DATA_PATH = "/mnt/data/video_data.json"
 DB_PATH = "/mnt/data/clicks.db"
-os.makedirs("/mnt/data", exist_ok=True)
 
 def load_data():
     if not os.path.exists(DATA_PATH):
