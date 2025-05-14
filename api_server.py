@@ -148,6 +148,14 @@ async def list_videos():
     data = load_data()
     return data["videos"]
 
+@app.get("/api/get_video_info")
+async def get_video_info(video_id: str):
+    data = load_data()
+    video = data["videos"].get(video_id)
+    if video:
+        return video
+    return JSONResponse(content={"error": "not found"}, status_code=404)
+
 @app.post("/api/save_recommend")
 async def save_recommend(request: Request):
     payload = await request.json()
