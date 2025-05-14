@@ -137,7 +137,7 @@ def safe_main():
 
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start1", start1))
+    app.add_handler(CommandHandler(["start", "start1"], start1))
     app.add_handler(CommandHandler("code1", code1))
     app.add_handler(CommandHandler("rank1", rank1))
     app.add_handler(CommandHandler("reset1", reset1))
