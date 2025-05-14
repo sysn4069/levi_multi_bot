@@ -9,13 +9,14 @@ import nest_asyncio
 nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT4_TOKEN")
-API_BASE_URL = os.getenv("SHARE_API_URL")
+API_BASE_URL = os.getenv("SHARE_API_URL")  # 예: https://your-api.onrender.com
 ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
 
-# 관리자 확인 함수
+# 관리자 확인
 def is_admin(update: Update) -> bool:
     return str(update.effective_user.id) in ADMIN_IDS
 
+# 영상 등록
 async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
@@ -42,6 +43,7 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 등록 실패")
 
+# 개인 공유 링크 생성
 async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         video_id = context.args[0]
@@ -51,6 +53,7 @@ async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except IndexError:
         await update.message.reply_text("❗ 형식: /getlink4 영상ID")
 
+# 내 클릭 통계
 async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
     async with httpx.AsyncClient() as client:
@@ -62,6 +65,7 @@ async def my_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 통계 조회 실패")
 
+# 전체 랭킹 보기
 async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async with httpx.AsyncClient() as client:
         res = await client.get(f"{API_BASE_URL}/api/ranking")
@@ -77,6 +81,7 @@ async def show_rank(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 랭킹 조회 실패")
 
+# 클릭 초기화
 async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
@@ -90,6 +95,7 @@ async def reset_clicks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 초기화 실패")
 
+# 영상 삭제
 async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
@@ -108,6 +114,7 @@ async def delete_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 삭제 실패 또는 영상 ID 없음")
 
+# 영상 정보 수정
 async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update):
         await update.message.reply_text("❌ 관리자만 사용할 수 있는 명령어입니다.")
@@ -134,6 +141,7 @@ async def edit_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⚠️ 수정 실패 또는 영상 ID 없음")
 
+# 실행 함수
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
