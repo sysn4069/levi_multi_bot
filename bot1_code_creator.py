@@ -3,6 +3,8 @@ import json
 import random
 import string
 import asyncio
+import time
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters
 import nest_asyncio
@@ -11,8 +13,9 @@ nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT1_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
-DB_PATH = "/data/referral_db.json"
-CONFIG_PATH = "/data/config.json"
+API_URL = os.getenv("API_URL", "https://your-api-server.onrender.com/api/save_recommend")
+DB_PATH = "/mnt/data/referral_db.json"
+CONFIG_PATH = "/mnt/data/config.json"
 
 print("🚀 BOT1 시작됨")
 
@@ -76,6 +79,16 @@ async def code1(update: Update, context: ContextTypes.DEFAULT_TYPE):
         db["counts"][user_id] = 0
         save_db(db)
 
+        # ✅ 외부 API 서버에 추천코드 저장
+        try:
+            requests.post(API_URL, json={
+                "user_id": user_id,
+                "code": code,
+                "timestamp": time.time()
+            })
+        except Exception as e:
+            print(f"[API 오류] 추천코드 저장 실패: {e}")
+
     bot_username = context.bot.username
     invite_link = f"https://t.me/{bot_username}?start={code}"
     await update.effective_message.reply_text(f"""📮 당신의 추천코드 링크:
@@ -134,6 +147,11 @@ def safe_main():
     loop.run_until_complete(main())
 
 async def main():
+    os.makedirs("/mnt/data", exist_ok=True)
+    global DB_PATH, CONFIG_PATH
+    DB_PATH = "/mnt/data/referral_db.json"
+    CONFIG_PATH = "/mnt/data/config.json"
+    load_config()
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler(["start", "start1"], start1))
     app.add_handler(CommandHandler("code1", code1))
