@@ -9,15 +9,13 @@ services:
       mountPath: /data
       sizeGB: 1
 
-  - type: background
+  - type: worker  # ⛳ 여기를 background → worker 로 수정
     name: telegram-bots
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     plan: standard
-    volumes:
-      - name: bot-persistent-storage
-        path: /mnt/data
-
-volumes:
-  - name: bot-persistent-storage
+    disk:
+      name: bot-persistent-storage
+      mountPath: /mnt/data
+      sizeGB: 1
