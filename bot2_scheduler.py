@@ -10,9 +10,8 @@ nest_asyncio.apply()
 TOKEN = os.getenv("BOT2_TOKEN")
 ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
 
-# 경로 설정
 os.makedirs("/mnt/data", exist_ok=True)
-DB_PATH = "/mnt/data/schedule_data.json"
+SETTINGS_PATH = "/mnt/data/schedule_settings.json"
 
 print("🚀 BOT2 시작됨")
 
@@ -20,79 +19,96 @@ print("🚀 BOT2 시작됨")
 def is_admin(user_id: int) -> bool:
     return str(user_id) in ADMIN_IDS
 
-# 스케줄 데이터 로드 및 저장
-def load_data():
-    if not os.path.exists(DB_PATH):
-        return {}
-    with open(DB_PATH, "r") as f:
+# 설정 로드/저장
+def load_settings():
+    if not os.path.exists(SETTINGS_PATH):
+        return {"message": "", "interval": 60, "enabled": False}
+    with open(SETTINGS_PATH, "r") as f:
         return json.load(f)
 
-def save_data(data):
-    with open(DB_PATH, "w") as f:
-        json.dump(data, f)
+def save_settings(settings):
+    with open(SETTINGS_PATH, "w") as f:
+        json.dump(settings, f)
 
-# 명령어: /addmsg2 시간 메시지
-async def addmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not is_admin(user_id):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+# 메시지 설정
+async def setmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("⛔ 관리자만 사용 가능합니다.")
         return
-
-    try:
-        hour = context.args[0]
-        message = " ".join(context.args[1:])
-        data = load_data()
-        data[hour] = message
-        save_data(data)
-        await update.message.reply_text(f"✅ {hour}시에 보낼 메시지가 추가되었습니다.")
-    except:
-        await update.message.reply_text("❗ 사용법: /addmsg2 시간 메시지")
-
-# 명령어: /listmsg2
-async def listmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    data = load_data()
-    if not data:
-        await update.message.reply_text("📭 등록된 메시지가 없습니다.")
-    else:
-        msg = "📋 등록된 메시지 목록:\n"
-        for hour, text in sorted(data.items()):
-            msg += f"{hour}: {text}\n"
-        await update.message.reply_text(msg)
-
-# 명령어: /delmsg2 시간
-async def delmsg2(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if not is_admin(user_id):
-        await update.message.reply_text("⛔ 관리자만 사용할 수 있습니다.")
+    message = " ".join(context.args)
+    if not message:
+        await update.message.reply_text("❗ 사용법: /setmsg2 [전송할 메시지]")
         return
+    settings = load_settings()
+    settings["message"] = message
+    save_settings(settings)
+    await update.message.reply_text("✅ 전송할 메시지가 설정되었습니다.")
 
+# 간격 설정
+async def setinterval2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("⛔ 관리자만 사용 가능합니다.")
+        return
     try:
-        hour = context.args[0]
-        data = load_data()
-        if hour in data:
-            del data[hour]
-            save_data(data)
-            await update.message.reply_text(f"🗑️ {hour}시 메시지가 삭제되었습니다.")
-        else:
-            await update.message.reply_text("❌ 해당 시간에 메시지가 없습니다.")
+        minutes = int(context.args[0])
+        settings = load_settings()
+        settings["interval"] = minutes
+        save_settings(settings)
+        await update.message.reply_text(f"✅ 메시지 전송 주기가 {minutes}분으로 설정되었습니다.")
     except:
-        await update.message.reply_text("❗ 사용법: /delmsg2 시간")
+        await update.message.reply_text("❗ 사용법: /setinterval2 [분]")
 
-# 메시지 자동 전송 루프 (예시 목적, 실제 구현 미완)
-async def send_scheduled_messages(app):
+# 상태 확인
+async def showsettings2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    settings = load_settings()
+    msg = f"""🔧 현재 설정:
+- 메시지: {settings.get("message", "")}
+- 주기: {settings.get("interval", 60)}분
+- 활성화 상태: {"✅ 활성화됨" if settings.get("enabled") else "⛔ 비활성화"}"""
+    await update.message.reply_text(msg)
+
+# 전송 루프
+async def auto_sender(app):
     while True:
-        # 실제 사용시 시간 체크 및 전송 로직 구현 필요
-        await asyncio.sleep(60)
+        settings = load_settings()
+        if settings.get("enabled") and settings.get("message"):
+            for chat_id in ADMIN_IDS:
+                try:
+                    await app.bot.send_message(chat_id=int(chat_id), text=settings["message"])
+                except Exception as e:
+                    print(f"메시지 전송 오류: {e}")
+        await asyncio.sleep(settings.get("interval", 60) * 60)
 
-# 메인 함수
+# 전송 시작
+async def start2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("⛔ 관리자만 사용 가능합니다.")
+        return
+    settings = load_settings()
+    settings["enabled"] = True
+    save_settings(settings)
+    await update.message.reply_text("✅ 자동 메시지 전송이 시작되었습니다.")
+
+# 전송 중단
+async def stop2(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("⛔ 관리자만 사용 가능합니다.")
+        return
+    settings = load_settings()
+    settings["enabled"] = False
+    save_settings(settings)
+    await update.message.reply_text("🛑 자동 메시지 전송이 중단되었습니다.")
+
+# 메인 실행
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("addmsg2", addmsg2))
-    app.add_handler(CommandHandler("listmsg2", listmsg2))
-    app.add_handler(CommandHandler("delmsg2", delmsg2))
+    app.add_handler(CommandHandler("setmsg2", setmsg2))
+    app.add_handler(CommandHandler("setinterval2", setinterval2))
+    app.add_handler(CommandHandler("showsettings2", showsettings2))
+    app.add_handler(CommandHandler("start2", start2))
+    app.add_handler(CommandHandler("stop2", stop2))
 
-    asyncio.create_task(send_scheduled_messages(app))
-
+    asyncio.create_task(auto_sender(app))
     print("✅ bot2_scheduler is running")
     await app.run_polling()
 
