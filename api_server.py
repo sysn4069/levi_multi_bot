@@ -10,6 +10,8 @@ app = FastAPI()
 DATA_PATH = "/mnt/data/video_data.json"
 DB_PATH = "/mnt/data/clicks.db"
 
+# Skip os.makedirs to avoid permission error; assume /mnt/data already exists on Render
+
 def load_data():
     if not os.path.exists(DATA_PATH):
         return {"videos": {}}
@@ -21,7 +23,6 @@ def save_data(data):
         json.dump(data, f)
 
 def init_db():
-    os.makedirs("/mnt/data", exist_ok=True)  # ✅ Ensure directory exists before DB operations
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
