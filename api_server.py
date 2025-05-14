@@ -21,6 +21,7 @@ def save_data(data):
         json.dump(data, f)
 
 def init_db():
+    os.makedirs("/mnt/data", exist_ok=True)  # ✅ Ensure directory exists before DB operations
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''
