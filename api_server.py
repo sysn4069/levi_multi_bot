@@ -149,3 +149,8 @@ async def save_recommend(request: Request):
     return {"status": "ok"}
 
 init_db()
+
+# ✅ Render 웹 서비스용 uvicorn 실행
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("api_server:app", host="0.0.0.0", port=10000)
