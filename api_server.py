@@ -8,7 +8,7 @@ import json
 app = FastAPI()
 
 # 로컬 경로로 변경
-DATA_DIR = "render/data"
+DATA_DIR = "/mnt/data"
 DATA_PATH = os.path.join(DATA_DIR, "video_data.json")
 DB_PATH = os.path.join(DATA_DIR, "clicks.db")
 
@@ -64,7 +64,7 @@ async def track(vid: str, uid: str, request: Request):
     conn.close()
 
     data = load_data()
-    video_url = data["videos"].get(vid, {}).get("video_url")
+    video_url = data.get("videos", {}).get(vid, {}).get("video_url")
     if video_url:
         return RedirectResponse(video_url)
 
