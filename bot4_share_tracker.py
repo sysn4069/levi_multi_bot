@@ -4,6 +4,7 @@ import asyncio
 import sqlite3
 import datetime
 import hashlib
+import httpx
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import nest_asyncio
@@ -12,7 +13,8 @@ nest_asyncio.apply()
 
 TOKEN = os.getenv("BOT4_TOKEN")
 ADMIN_ID = os.getenv("ADMIN_ID")
-TRACK_URL = os.getenv("SHARE_API_URL", "https://your-api.com") + "/track"
+SHARE_API_URL = os.getenv("SHARE_API_URL", "https://your-api.com")
+TRACK_URL = SHARE_API_URL + "/track"
 
 VIDEO_DATA_PATH = "/mnt/data/video_data.json"
 DB_PATH = "/mnt/data/clicks.db"
@@ -74,6 +76,22 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "count": 0
     }
     save_videos(videos)
+
+    # --- API 서버에 동기화 ---
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                SHARE_API_URL + "/api/sync_video",
+                json={
+                    "video_id": video_id,
+                    "title": title,
+                    "video_url": video_url,
+                    "thumbnail": thumbnail
+                }
+            )
+    except Exception as e:
+        print(f"❌ API 동기화 실패: {e}")
+
     await update.message.reply_text(f"✅ 등록 완료\n영상ID: {video_id}", parse_mode='Markdown')
 
 async def get_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -181,7 +199,7 @@ async def main():
     app.add_handler(CommandHandler("mystats4", mystats))
     app.add_handler(CommandHandler("rank4", show_rank))
     app.add_handler(CommandHandler("reset4", reset_clicks))
-    print("✅ bot4_share_tracker (local+sqlite) is running")
+    print("✅ bot4_share_tracker (local+sqlite+sync) is running")
     await app.run_polling()
 
 def safe_main():
