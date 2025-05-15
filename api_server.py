@@ -7,10 +7,12 @@ import json
 
 app = FastAPI()
 
-DATA_PATH = "/mnt/data/video_data.json"
-DB_PATH = "/mnt/data/clicks.db"
+# 로컬 경로로 변경
+DATA_DIR = "render/data"
+DATA_PATH = os.path.join(DATA_DIR, "video_data.json")
+DB_PATH = os.path.join(DATA_DIR, "clicks.db")
 
-os.makedirs("/mnt/data", exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
 
 def load_data():
