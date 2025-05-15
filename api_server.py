@@ -8,7 +8,7 @@ import json
 app = FastAPI()
 
 # 로컬 경로로 변경
-DATA_DIR = "/mnt/data"
+DATA_DIR = "mnt/data"
 DATA_PATH = os.path.join(DATA_DIR, "video_data.json")
 DB_PATH = os.path.join(DATA_DIR, "clicks.db")
 
