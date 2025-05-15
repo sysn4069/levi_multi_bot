@@ -7,8 +7,11 @@ import json
 
 app = FastAPI()
 
-DATA_PATH = "video_data.json"
-DB_PATH = "clicks.db"
+DATA_PATH = "/mnt/data/video_data.json"
+DB_PATH = "/mnt/data/clicks.db"
+
+os.makedirs("/mnt/data", exist_ok=True)
+
 
 def load_data():
     if not os.path.exists(DATA_PATH):
@@ -53,16 +56,13 @@ async def track(vid: str, uid: str, request: Request):
     try:
         c.execute("INSERT INTO clicks (vid, uid, ip, date) VALUES (?, ?, ?, ?)", (vid, uid, ip, today))
         conn.commit()
-        data = load_data()
-        if vid in data["videos"]:
-            data["videos"][vid]["count"] += 1
-            save_data(data)
         status = "counted"
     except sqlite3.IntegrityError:
         status = "duplicate"
     conn.close()
 
-    video_url = load_data()["videos"].get(vid, {}).get("video_url")
+    data = load_data()
+    video_url = data["videos"].get(vid, {}).get("video_url")
     if video_url:
         return RedirectResponse(video_url)
 
