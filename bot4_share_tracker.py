@@ -3,6 +3,7 @@ import json
 import asyncio
 import sqlite3
 import datetime
+import hashlib
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import nest_asyncio
@@ -27,6 +28,10 @@ def load_videos():
 def save_videos(data):
     with open(VIDEO_DATA_PATH, "w") as f:
         json.dump(data, f)
+
+# ---------- 고정된 video_id 생성 ----------
+def generate_video_id(title: str) -> str:
+    return hashlib.sha256(title.encode()).hexdigest()[:10]
 
 # ---------- DB 초기화 ----------
 def init_db():
@@ -60,7 +65,7 @@ async def register_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         await update.message.reply_text("❗ 형식: /register4 제목 | 영상URL | 썸네일URL")
         return
-    video_id = str(hash(title))
+    video_id = generate_video_id(title)
     videos = load_videos()
     videos[video_id] = {
         "title": title,
