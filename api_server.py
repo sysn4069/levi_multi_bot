@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
 import sqlite3
 import datetime
 import os
@@ -7,14 +8,14 @@ import json
 
 app = FastAPI()
 
-# 로컬 경로로 변경
+# 로컬 경로로 변경 (Starter 플랜에서는 'mnt/data'로 해야 함)
 DATA_DIR = "mnt/data"
 DATA_PATH = os.path.join(DATA_DIR, "video_data.json")
 DB_PATH = os.path.join(DATA_DIR, "clicks.db")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
-
+# ---------- 데이터 처리 ----------
 def load_data():
     if not os.path.exists(DATA_PATH):
         return {"videos": {}}
@@ -25,6 +26,7 @@ def save_data(data):
     with open(DATA_PATH, "w") as f:
         json.dump(data, f)
 
+# ---------- DB 초기화 ----------
 def init_db():
     try:
         with open(DB_PATH, "a"):
@@ -48,6 +50,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# ---------- 공유 링크 클릭 ----------
 @app.get("/track")
 async def track(vid: str, uid: str, request: Request):
     ip = request.client.host
@@ -70,6 +73,26 @@ async def track(vid: str, uid: str, request: Request):
 
     return JSONResponse(content={"status": status, "message": "영상 링크가 없습니다."})
 
+# ---------- 봇에서 영상 등록 시 동기화용 ----------
+class VideoData(BaseModel):
+    video_id: str
+    title: str
+    video_url: str
+    thumbnail: str
+
+@app.post("/api/sync_video")
+async def sync_video(data: VideoData):
+    all_data = load_data()
+    all_data.setdefault("videos", {})[data.video_id] = {
+        "title": data.title,
+        "video_url": data.video_url,
+        "thumbnail": data.thumbnail,
+        "count": 0
+    }
+    save_data(all_data)
+    return {"status": "ok", "message": f"영상 {data.video_id} 동기화 완료"}
+
+# ---------- 시작 ----------
 init_db()
 
 if __name__ == "__main__":
