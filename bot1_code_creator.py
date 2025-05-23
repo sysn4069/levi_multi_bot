@@ -31,14 +31,19 @@ def save_db(data):
         json.dump(data, f)
 
 def load_config():
+    default = {
+        "group_link": "https://t.me/levi_group",
+        "channel_link": "https://t.me/levi_channel",
+        "join_message": "👋 Levi 커뮤니티에 오신 걸 환영합니다!\n아래 버튼을 눌러 참여해주세요!"
+    }
     if not os.path.exists(CONFIG_PATH):
-        return {
-            "group_link": "https://t.me/levi_group",
-            "channel_link": "https://t.me/levi_channel",
-            "join_message": "👋 Levi 커뮤니티에 오신 걸 환영합니다!\n아래 버튼을 눌러 참여해주세요!"
-        }
+        return default
     with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+        config = json.load(f)
+        for key in default:
+            if key not in config:
+                config[key] = default[key]
+        return config
 
 def save_config(data):
     with open(CONFIG_PATH, "w") as f:
@@ -186,7 +191,7 @@ async def main():
     app.add_handler(CommandHandler("rank1", rank1))
     app.add_handler(CommandHandler("reset1", reset1))
     app.add_handler(CommandHandler("setlink1", setlink1))
-    app.add_handler(CommandHandler("setchannel1", setchannel1))  # 추가
+    app.add_handler(CommandHandler("setchannel1", setchannel1))
     app.add_handler(CommandHandler("setmsg1", setmsg1))
     app.add_handler(CommandHandler("info1", info1))
     await app.run_polling()
