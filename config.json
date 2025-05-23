@@ -1,1 +1,5 @@
-{"group_link": "https://t.me/levi_group", "join_message": "\ud83d\udc65 Levi \uadf8\ub8f9\uc5d0 \ucc38\uc5ec\ud558\ub824\uba74 \uc544\ub798 \ub9c1\ud06c\ub97c \ud074\ub9ad\ud558\uc138\uc694:"}
+{
+  "group_link": "https://t.me/levi_group",
+  "channel_link": "https://t.me/levi_channel",  // ← 새 항목
+  "join_message": "👥 Levi 그룹에 참여하려면 아래 링크를 클릭하세요:"
+}
