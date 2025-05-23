@@ -69,17 +69,17 @@ async def start1(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 save_db(db)
 
     # 메시지 + 버튼
-    message_text = (
-        f"{config['join_message']}\n\n"
-        "📢 공지채널 : 배반 공지\n"
-        "💬 소통방 : 배반 소통방"
-    )
-    keyboard = [
-        [
-            InlineKeyboardButton("배반 공지", url=config["channel_link"]),
-            InlineKeyboardButton("배반 소통방", url=config["group_link"])
-        ]
+   message_text = (
+    f"{config['join_message']}\n\n"
+    "📢 공지채널 : 랩소디 공지방\n"
+    "💬 소통방 : 랩소디 소통방"
+)
+   keyboard = [
+    [
+        InlineKeyboardButton("랩소디 공지방", url=config["channel_link"]),
+        InlineKeyboardButton("랩소디 소통방", url=config["group_link"])
     ]
+]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.effective_message.reply_text(message_text, reply_markup=reply_markup)
